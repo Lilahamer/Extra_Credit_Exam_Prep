@@ -25,6 +25,46 @@ const db = knex({
   }
 });
 
+
+// Auto-create database tables on Render if missing (it wasn't connecting to my pgadmin so Notebooklm helped me with this part)
+async function initDatabase() {
+  try {
+    const hasCountryTable = await db.schema.hasTable('country');
+    if (!hasCountryTable) {
+      await db.schema.createTable('country', (table) => {
+        table.increments('country_id').primary();
+        table.string('country_name', 30).notNullable();
+        table.string('popular_site', 50).notNullable();
+        table.string('capital', 30).notNullable();
+        table.integer('population').notNullable();
+        table.string('visited', 1);
+      });
+
+      await db('country').insert([
+        { country_name: 'Fiji', popular_site: 'Cloudbreak', capital: 'Suva', population: 900000, visited: 'Y' },
+        { country_name: 'Australia', popular_site: 'Sydney Opera House', capital: 'Canberra', population: 25680000, visited: 'N' },
+        { country_name: 'New Zealand', popular_site: 'Milford Sound', capital: 'Wellington', population: 5120000, visited: 'N' },
+        { country_name: 'Samoa', popular_site: 'To Sua Ocean Trench', capital: 'Apia', population: 200000, visited: 'N' }
+      ]);
+    }
+
+    const hasUsersTable = await db.schema.hasTable('users');
+    if (!hasUsersTable) {
+      await db.schema.createTable('users', (table) => {
+        table.increments('user_id').primary();
+        table.string('username', 50).notNullable().unique();
+        table.string('password', 100).notNullable();
+      });
+
+      await db('users').insert({ username: 'admin', password: 'password123' });
+    }
+  } catch (err) {
+    console.error('Error initializing database tables:', err);
+  }
+}
+
+initDatabase();
+
 //Adding the allowed countries object with their corresponding map zoom levels (smaller numbers show a broader area while larger zoom numbers show greater detail)
 const countryZooms = {
   'Australia': 4,
