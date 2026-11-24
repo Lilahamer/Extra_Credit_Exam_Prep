@@ -12,7 +12,11 @@ const app = express();
 // Phase 2: Configure Knex directly in index.js
 const db = knex({
   client: 'pg',
-  connection: {
+  connection: process.env.DATABASE_URL ? {
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false} //required for cloud hosted Postgres like Professor Andersen wants
+  } : {
     host: 'localhost',
     user: 'postgres',
     password: "lil'sIS402$",
@@ -21,6 +25,16 @@ const db = knex({
   }
 });
 
+//Adding the allowed countries object with their corresponding map zoom levels (smaller numbers show a broader area while larger zoom numbers show greater detail)
+const countryZooms = {
+  'Australia': 4,
+  'New Zealand': 5,
+  'Fiji': 7,
+  'Samoa': 9,
+  'Japan': 5,
+  'Canada': 3,
+  'Italy': 6
+};
 
 //Phase 3: Express server, Middleware, and authentication
 //1-3 is the Template Engine and Middleware setup
@@ -41,14 +55,54 @@ app.use(session({
   saveUninitialized: false
 }));
 
-// 5. Auth Middleware function to protect routes
+
+//5. Build the Server API route 
+app.get('/api/country', (req, res) => {
+  const country = req.query.country;
+
+  if (!country) {
+    return res.status(400).json({ error: 'Country parameter is required' });
+  }
+
+  // Determine zoom level (uses dictionary value if present, else defaults to 5)
+  const zoomLevel = countryZooms[country] || 5; //if a country sin't in the dictionary, it defaults to zoom level 5 so any country in database will work
+
+  // Query OpenStreetMap Nominatim from your server
+  fetch(`https://nominatim.openstreetmap.org/search?country=${encodeURIComponent(country)}&format=jsonv2&limit=1`, {
+    headers: {
+      'User-Agent': 'country_catalog_extra_credit',
+      'Accept-Language': 'en'
+    }
+  })
+    .then(response => response.json())
+    .then(places => {
+      if (places.length === 0) {
+        return res.status(404).json({ error: 'Place not found' });
+      }
+
+      const place = places[0];
+      // Return JSON to client
+      res.json({
+        name: country,
+        lat: Number(place.lat),
+        lon: Number(place.lon),
+        zoom: zoomLevel
+      });
+    })
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ error: 'Error retrieving map' });
+    });
+});
+
+
+//6. Auth Middleware function to protect routes
 function requireAuth(req, res, next) {
   if (req.session && req.session.isLoggedIn) {
     return next(); // User is logged in -> proceed to the route
   }
   res.redirect('/'); // Not logged in -> send to login page
 }
-
 
 
 
@@ -198,5 +252,8 @@ app.post('/countries/delete/:id', requireAuth, async (req, res) => {
 
 
 
-// Start Server
-app.listen(3000, () => console.log('Server running on http://localhost:3000')); 
+//Port Production Ready (doing app.listen (3000...) will fail on cloud hosts):
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

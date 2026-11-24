@@ -10,7 +10,21 @@
 
 <!DOCTYPE html>
 <html>
-<head><title>Country Catalog</title></head>
+<head><title>Country Catalog</title>
+ <!-- Leaflet CSS & JS CDN -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+      /* Leaflet requires an explicit height to display */
+      #map {
+        height: 400px;
+        width: 100%;
+        margin-top: 20px;
+        display: none; /* Hidden until a user clicks Map */
+      }
+    </style>
+  </head>
 <body>
   <h2>Country Records</h2>
   <a href="/logout">Logout</a>
@@ -53,6 +67,11 @@
       <% }); %>
     </tbody>
   </table>
+  <!-- Map display area -->
+  <p id="status" style="color: blue;"></p>
+  <h3 id="countryName"></h3>
+  <div id="map"></div>
+  
 
   <br>
   <a href="/countries/add"><button>Add New Country</button></a>
@@ -66,13 +85,64 @@
 </div>
 
 <!--When user clicks this function/button with the country_name as an argument, it makes the hidden box/map visible (display from "none" to "block"/visible), changes the name/map title from empty to "Map of the [country_name]," assigns the URL to the frame's src attribute, and this triggers to load the OpenStreetMap in the page-->
-  <script> 
+  <!--<script> 
     function showMap(countryName) {
       document.getElementById('mapModal').style.display = 'block';
       document.getElementById('mapTitle').innerText = 'Map of ' + countryName;
       // Open OpenStreetMap embed iframe
       document.getElementById('mapFrame').src = 'https://www.openstreetmap.org/export/embed.html?query=' + encodeURIComponent(countryName);
     }
-  </script>
+  </script>-->
+
+<script>
+  let map;
+  let marker;
+
+  function showMap(countryName) {
+    const statusDiv = document.getElementById('status');
+    const countryHeading = document.getElementById('countryName');
+    const mapDiv = document.getElementById('map');
+
+    statusDiv.textContent = 'Loading map for ' + countryName + '...';
+
+    // 1. Fetch JSON from your Express server route
+    fetch('/api/country?country=' + encodeURIComponent(countryName))
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          statusDiv.textContent = data.error;
+          return;
+        }
+
+        statusDiv.textContent = '';
+        countryHeading.textContent = 'Map of ' + data.name;
+        mapDiv.style.display = 'block'; // Make container visible
+
+        // 2. Initialize Leaflet map instance on first click
+        if (!map) {
+          map = L.map('map');
+          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+          }).addTo(map);
+        }
+
+        // 3. Move map view to returned lat/lon and zoom
+        map.setView([data.lat, data.lon], data.zoom);
+
+        // 4. Remove previous marker if exists, then place new one
+        if (marker) {
+          map.removeLayer(marker);
+        }
+        marker = L.marker([data.lat, data.lon])
+          .addTo(map)
+          .bindPopup(data.name)
+          .openPopup();
+      })
+      .catch(err => {
+        statusDiv.textContent = 'Error retrieving map data.';
+      });
+  }
+</script>
 </body>
 </html>
