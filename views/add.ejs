@@ -1,0 +1,43 @@
+<!--This is the add Country file with forms-->
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Add Country</title>
+</head>
+<body>
+  <h1>Add a New Country</h1>
+
+  <!-- Display error message if server validation fails -->
+  <% if (error) { %>
+    <p style="color: red;"><%= error %></p>
+  <% } %>
+
+  <form action="/countries/add" method="POST">
+    <label>Country Name: 
+      <input type="text" name="country_name" maxlength="30" required>
+    </label><br><br>
+
+    <label>Popular Site: 
+      <input type="text" name="popular_site" maxlength="50" required>
+    </label><br><br>
+
+    <label>Capital: 
+      <input type="text" name="capital" maxlength="30" required>
+    </label><br><br>
+
+    <label>Population: 
+      <input type="number" name="population" min="0" required>
+    </label><br><br>
+
+    <label>Visited (Y/N): 
+      <input type="text" name="visited" maxlength="1">
+    </label><br><br>
+
+    <button type="submit">Save Country</button>
+  </form>
+
+  <br>
+  <a href="/countries">Cancel & Return to List</a>
+</body>
+</html>

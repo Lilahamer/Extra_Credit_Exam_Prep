@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head><title>Country Catalog - Login</title></head>
+<body>
+  <h1>Country Catalog</h1>
+  <img src="/images/globe.png" alt="World Map Image" width="300" />
+  <!--Use <% %> to execute JavaScript logic like loops or conditionals without producing visible HTML-->
+  <!--Use <%= %> to evaluate and output an HTML-escaped value-->
+  <% if (error) { %>
+    <p style="color: red;"><%= error %></p>
+  <% } %>
+
+  <!-- Submit credentials securely via POST -->
+  <form action="/login" method="POST">
+    <label>Username: <input type="text" name="username" required></label><br>
+    <label>Password: <input type="password" name="password" required></label><br>
+    <button type="submit">Sign In</button>
+  </form>
+</body>
+</html>

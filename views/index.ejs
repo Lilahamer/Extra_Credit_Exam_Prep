@@ -1,0 +1,78 @@
+<!--1. Initialize Node.js and install dependencies 
+    -npm init -y
+    -npm install express ejs knex pg express-session
+    -Create Folder Layout: THIS file is the Main Country Catalog Table
+2. Set-up Database & knex (done in index.js)
+3. Express server, Middleware, and authentication (index.js)
+4. Build the Views (ejs templates, like below...)
+5. Routes & CRUD implementation (index.js)
+-->
+
+<!DOCTYPE html>
+<html>
+<head><title>Country Catalog</title></head>
+<body>
+  <h2>Country Records</h2>
+  <a href="/logout">Logout</a>
+
+  <table border="1"> <!--This does the CSS border around the table-->
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Country Name</th>
+        <th>Popular Site</th>
+        <th>Capital</th>
+        <th>Population</th>
+        <th>Visited?</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Dynamic loop over array of countries passed from Express ->We are not doing an output but simply looping here -->
+      <% countries.forEach(country => { %>
+        <tr>
+          <td><%= country.country_id %></td> <!--We are using = so it will output the actualy country name once looped through-->
+          <td><%= country.country_name %></td>
+          <td><%= country.popular_site %></td>
+          <td><%= country.capital %></td>
+          <td><%= Number(country.population).toLocaleString() %></td>
+          <td><%= country.visited || 'N/A' %></td>
+          <td>
+            <!-- URL Parameter used for GET requests (NOT post since we're onlu retrieving data to edit): once we've looped through the countries, we place it in the href to edit it -->
+            <a href="/countries/edit/<%= country.country_id %>">Edit</a> |
+            
+            <!-- POST form for destructive Delete action with JS confirmation: we use post for deleting/creating data -->
+            <form action="/countries/delete/<%= country.country_id %>" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this country?');"> <!--onsubmit ask to confirm/pop-up before actually deleting-->
+              <button type="submit">Delete</button>
+            </form> |
+
+            <!-- Map trigger button -->
+            <button onclick="showMap('<%= country.country_name %>')">Map</button> <!--When user clicks map button, it triggers the function below with the country_name as the parameter-->
+          </td>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+
+  <br>
+  <a href="/countries/add"><button>Add New Country</button></a>
+
+  <!-- Simple Map Modal / Box -->
+  <div id="mapModal" style="display:none; margin-top:20px; padding:10px; border:1px solid #ccc;">
+    <!--display:none hides the container when the page first loads so it doesn't take up space until the user click the button-->
+    <h3 id="mapTitle"></h3>
+    <iframe id="mapFrame" width="400" height="300" frameborder="0" src=""></iframe>
+    <!--iframe is a tag used to display another webpage (the map) inside your current webpage and no map loads until requested (why src="")-->
+</div>
+
+<!--When user clicks this function/button with the country_name as an argument, it makes the hidden box/map visible (display from "none" to "block"/visible), changes the name/map title from empty to "Map of the [country_name]," assigns the URL to the frame's src attribute, and this triggers to load the OpenStreetMap in the page-->
+  <script> 
+    function showMap(countryName) {
+      document.getElementById('mapModal').style.display = 'block';
+      document.getElementById('mapTitle').innerText = 'Map of ' + countryName;
+      // Open OpenStreetMap embed iframe
+      document.getElementById('mapFrame').src = 'https://www.openstreetmap.org/export/embed.html?query=' + encodeURIComponent(countryName);
+    }
+  </script>
+</body>
+</html>
